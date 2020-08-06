@@ -1,4 +1,5 @@
 import { NodePath, PluginObj, types as BabelTypes } from '@babel/core';
+// @ts-expect-error missing typedef
 import { wrapInterop } from '@babel/helper-module-transforms';
 
 interface ImportInfo {
@@ -52,12 +53,13 @@ export default function ({
     ]);
 
   const insertDeclaration = (
-    path,
+    path: NodePath<BabelTypes.Node>,
     programPath: NodePath<BabelTypes.Program>,
     info: ImportInfo
   ) => {
     const parentWithBody = path.findParent(
       (p) =>
+        // @ts-ignore looking for a node with body
         p.node !== undefined && p.node.body !== undefined && p.node.body.length
     );
 
@@ -69,17 +71,11 @@ export default function ({
       !affectedParents[info.local].has(parentWithBody) &&
       !parentWithBody.scope.hasBinding(info.local)
     ) {
-      if (info.property === 'default') {
-        parentWithBody.unshiftContainer(
-          'body',
-          createConstRequireExpression(programPath, info)
-        );
-      } else {
-        parentWithBody.unshiftContainer(
-          'body',
-          createConstRequireExpression(programPath, info)
-        );
-      }
+      parentWithBody.unshiftContainer(
+        // @ts-expect-error wrong typedef type
+        'body',
+        createConstRequireExpression(programPath, info)
+      );
 
       affectedParents[info.local].add(parentWithBody);
     }
@@ -90,7 +86,7 @@ export default function ({
     visitor: {
       ImportDeclaration(path: NodePath<BabelTypes.ImportDeclaration>) {
         const specifiers = path.node.specifiers;
-        const programPath = path.parentPath;
+        const programPath = path.parentPath as NodePath<BabelTypes.Program>;
         if (IGNORED_MODULES.includes(path.node.source.value)) {
           return;
         }
@@ -117,6 +113,8 @@ export default function ({
                 };
 
           const binding = path.scope.getBinding(info.local);
+          if (!binding) return;
+
           path.scope.rename(
             info.local,
             `____________${info.local}____________`

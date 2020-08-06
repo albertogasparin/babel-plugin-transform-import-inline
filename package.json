@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-import-inline",
-  "version": "2.2.3",
+  "version": "0.0.1",
   "description": "Babel plugin to transform ES import into inline require to lazy evaluate",
   "keywords": [
     "Babel",
@@ -9,7 +9,6 @@
     "Require"
   ],
   "main": "lib/index.js",
-  "types": "./types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://albertogasparin@github.com/albertogasparin/babel-plugin-transform-import-inline.git"
@@ -25,6 +24,7 @@
     "build:cjs": "babel src/ -d lib --ignore **/__tests__ --extensions \".ts,.tsx\" --presets @babel/env --presets @babel/typescript",
     "build": "npm run clean:build -s && npm run build:cjs -s",
     "test": "jest",
+    "types": "tsc --noEmit",
     "lint": "eslint ./src",
     "preversion": "npm run lint -s && npm run types -s && npm run test -s",
     "prepack": "npm run preversion -s && npm run build -s"
