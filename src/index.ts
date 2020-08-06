@@ -81,14 +81,15 @@ export default function ({
     inherits: require('babel-plugin-syntax-jsx'),
     visitor: {
       ImportDeclaration(path: NodePath<BabelTypes.ImportDeclaration>) {
+        if (IGNORED_MODULES.includes(path.node.source.value)) return;
+        if (path.node.importKind === 'type') return;
+
         const specifiers = path.node.specifiers;
         const programPath = path.parentPath as NodePath<BabelTypes.Program>;
-        if (IGNORED_MODULES.includes(path.node.source.value)) {
-          return;
-        }
 
         let hasReplaced = false;
-        specifiers.forEach((specifier) => {
+
+        const remainingSpecifiers = specifiers.filter((specifier) => {
           const info: ImportInfo =
             specifier.type === 'ImportDefaultSpecifier'
               ? {
@@ -110,8 +111,14 @@ export default function ({
 
           const binding = path.scope.getBinding(info.local);
           if (!binding) {
-            return;
+            return true;
           }
+
+          if (
+            specifier.type === 'ImportSpecifier' &&
+            specifier.importKind === 'type'
+          )
+            return true;
 
           path.scope.rename(
             info.local,
@@ -126,8 +133,14 @@ export default function ({
             `____________${info.local}____________`,
             info.local
           );
+          return !hasReplaced;
         });
-        if (hasReplaced) path.remove();
+
+        if (remainingSpecifiers.length === 0) {
+          path.remove();
+        } else {
+          path.node.specifiers = remainingSpecifiers;
+        }
       },
     },
   };
