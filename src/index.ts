@@ -8,9 +8,7 @@ interface ImportInfo {
   source: string;
 }
 
-type AffectedParents = {
-  [key: string]: WeakSet<NodePath>;
-};
+type AffectedParents = Map<string, WeakSet<NodePath>>;
 
 const IGNORED_MODULES = ['react'];
 
@@ -19,7 +17,7 @@ export default function ({
 }: {
   types: typeof BabelTypes;
 }): PluginObj {
-  const affectedParents: AffectedParents = {};
+  const affectedParents: AffectedParents = new Map();
 
   const createRequireExpression = (
     programPath: NodePath<BabelTypes.Program>,
@@ -58,18 +56,16 @@ export default function ({
     info: ImportInfo
   ) => {
     const parentWithBody = path.findParent(
-      (p) =>
-        // @ts-ignore looking for a node with body
-        p.node !== undefined && p.node.body !== undefined && p.node.body.length
+      (p: NodePath<any>) => p.node?.body?.length && p.node?.type !== 'ClassBody'
     );
 
-    if (!affectedParents[info.local]) {
-      affectedParents[info.local] = new WeakSet();
+    if (!affectedParents.has(info.local)) {
+      affectedParents.set(info.local, new WeakSet());
     }
 
     if (
-      !affectedParents[info.local].has(parentWithBody) &&
-      !parentWithBody.scope.hasBinding(info.local)
+      !affectedParents.get(info.local)?.has(parentWithBody) &&
+      !parentWithBody.scope.hasBinding(info.local, true)
     ) {
       parentWithBody.unshiftContainer(
         // @ts-expect-error wrong typedef type
@@ -77,7 +73,7 @@ export default function ({
         createConstRequireExpression(programPath, info)
       );
 
-      affectedParents[info.local].add(parentWithBody);
+      affectedParents.get(info.local)?.add(parentWithBody);
     }
   };
 
@@ -113,12 +109,15 @@ export default function ({
                 };
 
           const binding = path.scope.getBinding(info.local);
-          if (!binding) return;
+          if (!binding) {
+            return;
+          }
 
           path.scope.rename(
             info.local,
             `____________${info.local}____________`
           );
+
           binding.referencePaths.forEach((referencePath) => {
             insertDeclaration(referencePath, programPath, info);
             hasReplaced = true;
