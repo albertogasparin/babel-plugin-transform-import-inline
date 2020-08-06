@@ -7,9 +7,6 @@ interface ImportInfo {
   source: string;
 }
 
-type Imports = {
-  [key: string]: ImportInfo;
-};
 type AffectedParents = {
   [key: string]: WeakSet<NodePath>;
 };
@@ -21,7 +18,6 @@ export default function ({
 }: {
   types: typeof BabelTypes;
 }): PluginObj {
-  const imports: Imports = {};
   const affectedParents: AffectedParents = {};
 
   const createRequireExpression = (
