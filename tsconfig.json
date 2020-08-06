@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "declaration": true,
+    "outDir": "lib",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "preserveConstEnums": true,
+    "jsx": "preserve",
+    "typeRoots": ["./node_modules/@types"],
+    "baseUrl": "."
+  },
+  "include": ["src/**/*"]
+}
