@@ -18,6 +18,7 @@ module.exports = {
       version: 'latest',
     },
   },
+  ignorePatterns: ['**/__fixtures__'],
   plugins: [],
   rules: {},
   overrides: [
