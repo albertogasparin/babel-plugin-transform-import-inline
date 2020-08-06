@@ -29,7 +29,10 @@
     "preversion": "npm run lint -s && npm run types -s && npm run test -s",
     "prepack": "npm run preversion -s && npm run build -s"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@babel/helper-module-transforms": "^7.11.0",
+    "babel-plugin-syntax-jsx": "^6.18.0"
+  },
   "peerDependencies": {},
   "devDependencies": {
     "@babel/cli": "^7.10.1",

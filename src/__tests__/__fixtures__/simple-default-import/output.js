@@ -1,5 +1,9 @@
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { default: obj };
+}
+
 export const runFoo = () => {
-  const foo = require('./foo').default;
+  const foo = _interopRequireDefault(require('./foo')).default;
 
   return foo();
 };

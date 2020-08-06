@@ -1,14 +1,17 @@
 import { NodePath, PluginObj, types as BabelTypes } from '@babel/core';
-import jestConfig from '../jest.config';
+import { wrapInterop } from '@babel/helper-module-transforms';
 
 interface ImportInfo {
   local: string;
-  property: string;
+  property: string | null;
   source: string;
 }
 
 type Imports = {
   [key: string]: ImportInfo;
+};
+type AffectedParents = {
+  [key: string]: WeakSet<NodePath>;
 };
 
 const IGNORED_MODULES = ['react'];
@@ -19,137 +22,118 @@ export default function ({
   types: typeof BabelTypes;
 }): PluginObj {
   const imports: Imports = {};
+  const affectedParents: AffectedParents = {};
 
-  const createRequireExpression = (info: ImportInfo) =>
+  const createRequireExpression = (
+    programPath: NodePath<BabelTypes.Program>,
+    info: ImportInfo
+  ) =>
     t.memberExpression(
-      t.callExpression(t.identifier('require'), [t.stringLiteral(info.source)]),
+      info.property === 'default'
+        ? wrapInterop(
+            programPath,
+            t.callExpression(t.identifier('require'), [
+              t.stringLiteral(info.source),
+            ]),
+            'default'
+          )
+        : t.callExpression(t.identifier('require'), [
+            t.stringLiteral(info.source),
+          ]),
       t.identifier(info.property)
     );
 
-  const createConstRequireExpression = (info: ImportInfo) =>
+  const createConstRequireExpression = (
+    programPath: NodePath<BabelTypes.Program>,
+    info: ImportInfo
+  ) =>
     t.variableDeclaration('const', [
       t.variableDeclarator(
         t.identifier(info.local),
-        createRequireExpression(info)
+        createRequireExpression(programPath, info)
       ),
     ]);
 
-  const insertDeclaration = (path, info) => {
+  const insertDeclaration = (
+    path,
+    programPath: NodePath<BabelTypes.Program>,
+    info: ImportInfo
+  ) => {
     const parentWithBody = path.findParent(
-      (p) => p.node !== undefined && p.node.body !== undefined
+      (p) =>
+        p.node !== undefined && p.node.body !== undefined && p.node.body.length
     );
 
-    if (!parentWithBody.scope.hasBinding(info.local)) {
-      parentWithBody.unshiftContainer(
-        'body',
-        createConstRequireExpression(info)
-      );
+    if (!affectedParents[info.local]) {
+      affectedParents[info.local] = new WeakSet();
+    }
+
+    if (
+      !affectedParents[info.local].has(parentWithBody) &&
+      !parentWithBody.scope.hasBinding(info.local)
+    ) {
+      if (info.property === 'default') {
+        parentWithBody.unshiftContainer(
+          'body',
+          createConstRequireExpression(programPath, info)
+        );
+      } else {
+        parentWithBody.unshiftContainer(
+          'body',
+          createConstRequireExpression(programPath, info)
+        );
+      }
+
+      affectedParents[info.local].add(parentWithBody);
     }
   };
 
   return {
+    inherits: require('babel-plugin-syntax-jsx'),
     visitor: {
       ImportDeclaration(path: NodePath<BabelTypes.ImportDeclaration>) {
         const specifiers = path.node.specifiers;
-
+        const programPath = path.parentPath;
         if (IGNORED_MODULES.includes(path.node.source.value)) {
           return;
         }
 
+        let hasReplaced = false;
         specifiers.forEach((specifier) => {
-          if (specifier.type === 'ImportDefaultSpecifier') {
-            const info = {
-              local: specifier.local.name,
-              property: 'default',
-              source: path.node.source.value,
-            };
-            imports[info.local] = info;
-          } else if (specifier.type === 'ImportSpecifier') {
-            const info = {
-              local: specifier.local.name,
-              property: specifier.imported.name,
-              source: path.node.source.value,
-            };
-            imports[info.local] = info;
-          }
+          const info: ImportInfo =
+            specifier.type === 'ImportDefaultSpecifier'
+              ? {
+                  local: specifier.local.name,
+                  property: 'default',
+                  source: path.node.source.value,
+                }
+              : specifier.type === 'ImportSpecifier'
+              ? {
+                  local: specifier.local.name,
+                  property: specifier.imported.name,
+                  source: path.node.source.value,
+                }
+              : {
+                  local: specifier.local.name,
+                  property: null,
+                  source: path.node.source.value,
+                };
+
+          const binding = path.scope.getBinding(info.local);
+          path.scope.rename(
+            info.local,
+            `____________${info.local}____________`
+          );
+          binding.referencePaths.forEach((referencePath) => {
+            insertDeclaration(referencePath, programPath, info);
+            hasReplaced = true;
+          });
+          path.scope.rename(
+            `____________${info.local}____________`,
+            info.local
+          );
         });
-        path.remove();
-      },
-      CallExpression(path) {
-        if (path.node.callee.type === 'Identifier') {
-          const { name } = path.node.callee;
-          if (imports[name]) {
-            insertDeclaration(path, imports[name]);
-          }
-        }
-      },
-      JSXIdentifier(path) {
-        const { name } = path.node;
-        if (imports[name]) {
-          insertDeclaration(path, imports[name]);
-        }
-      },
-      AssignmentPattern(path) {
-        const { right } = path.node;
-
-        if (right.type === 'Identifier') {
-          const matchedImport = Object.keys(imports).find((key) => {
-            return imports[key].local === right.name;
-          });
-
-          if (matchedImport && imports[matchedImport]) {
-            path.node.right = createRequireExpression(imports[matchedImport]);
-          }
-        } else if (right.type === 'CallExpression') {
-          const matchedImport = Object.keys(imports).find((key) => {
-            if (right.callee.type === 'Identifier')
-              return imports[key].local === right.callee.name;
-            return false;
-          });
-
-          if (matchedImport && imports[matchedImport]) {
-            right.callee = createRequireExpression(imports[matchedImport]);
-          }
-        } else if (right.type === 'JSXElement') {
-          if (right.openingElement.name.type === 'JSXIdentifier') {
-            const { name } = right.openingElement.name;
-            const matchedImport = Object.keys(imports).find((key) => {
-              return imports[key].local === name;
-            });
-
-            const parentScope = path.getStatementParent().scope;
-            if (!parentScope.hasBinding(name)) {
-              // console.log(parentScope);
-              parentScope.push({
-                id: t.identifier(name),
-                init: createRequireExpression(imports[matchedImport]),
-              });
-            }
-          } else if (right.openingElement.name.type === 'JSXMemberExpression') {
-            let node = right.openingElement.name.object;
-
-            while (node && node.type !== 'JSXIdentifier') {
-              node = node.object;
-            }
-
-            if (!node) return;
-            if (node.type !== 'JSXIdentifier') return;
-
-            const { name } = node;
-            const matchedImport = Object.keys(imports).find((key) => {
-              return imports[key].local === name;
-            });
-
-            const parentScope = path.getStatementParent().scope;
-            if (!parentScope.hasBinding(name)) {
-              // console.log(parentScope);
-              parentScope.push({
-                id: t.identifier(name),
-                init: createRequireExpression(imports[matchedImport]),
-              });
-            }
-          }
-        }
+        if (hasReplaced) path.remove();
       },
     },
   };

@@ -8,7 +8,4 @@ pluginTester({
   pluginName: 'babel-plugin-transform-import-inline',
   fixtures: path.join(__dirname, '__fixtures__'),
   snapshot: true,
-  babelOptions: {
-    presets: [['@babel/preset-react', { development: false, pragma: '__jsx' }]],
-  },
 });
