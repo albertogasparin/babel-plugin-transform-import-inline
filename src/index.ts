@@ -58,9 +58,7 @@ export default function ({
     info: ImportInfo
   ) => {
     const parentWithBody = path.findParent(
-      (p) =>
-        // @ts-ignore looking for a node with body
-        p.node !== undefined && p.node.body !== undefined && p.node.body.length
+      (p: NodePath<any>) => p.node?.body?.length && p.node?.type !== 'ClassBody'
     );
 
     if (!affectedParents[info.local]) {
@@ -113,12 +111,15 @@ export default function ({
                 };
 
           const binding = path.scope.getBinding(info.local);
-          if (!binding) return;
+          if (!binding) {
+            return;
+          }
 
           path.scope.rename(
             info.local,
             `____________${info.local}____________`
           );
+
           binding.referencePaths.forEach((referencePath) => {
             insertDeclaration(referencePath, programPath, info);
             hasReplaced = true;
