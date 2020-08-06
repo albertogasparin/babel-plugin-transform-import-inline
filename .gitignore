@@ -1,0 +1,10 @@
+.idea
+.local
+.vscode
+.DS_Store
+
+coverage
+node_modules
+yarn.lock
+
+/lib

@@ -1,0 +1,56 @@
+{
+  "name": "babel-plugin-transform-import-inline",
+  "version": "2.2.3",
+  "description": "Babel plugin to transform ES import into inline require to lazy evaluate",
+  "keywords": [
+    "Babel",
+    "Import",
+    "Lazy",
+    "Require"
+  ],
+  "main": "lib/index.js",
+  "types": "./types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://albertogasparin@github.com/albertogasparin/babel-plugin-transform-import-inline.git"
+  },
+  "author": "Alberto Gasparin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/albertogasparin/babel-plugin-transform-import-inline/issues"
+  },
+  "homepage": "https://github.com/albertogasparin/babel-plugin-transform-import-inline#readme",
+  "scripts": {
+    "clean:build": "rm -rf ./lib",
+    "build:cjs": "babel src/ -d lib --ignore **/__tests__ --extensions \".ts,.tsx\" --presets @babel/env --presets @babel/typescript",
+    "build": "npm run clean:build -s && npm run build:cjs -s",
+    "test": "jest",
+    "lint": "eslint ./src",
+    "preversion": "npm run lint -s && npm run types -s && npm run test -s",
+    "prepack": "npm run preversion -s && npm run build -s"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "devDependencies": {
+    "@babel/cli": "^7.10.1",
+    "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.10.2",
+    "@babel/plugin-transform-runtime": "^7.9.6",
+    "@babel/preset-typescript": "^7.9.0",
+    "@babel/runtime": "^7.10.2",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^26.0.1",
+    "babel-plugin-tester": "^9.0.1",
+    "babel-types": "^6.26.0",
+    "dtslint": "^3.6.12",
+    "eslint": "^7.2.0",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-local": "^1.0.0",
+    "jest": "^26.0.1",
+    "prettier": "^2.0.5",
+    "typescript": "^3.9.7"
+  },
+  "engines": {
+    "node": ">=10.16.0"
+  }
+}
