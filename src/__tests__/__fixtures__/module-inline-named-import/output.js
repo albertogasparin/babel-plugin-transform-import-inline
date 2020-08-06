@@ -1,5 +1,5 @@
-export const runFoo = () => {
-  const foo = require('./foo').foo;
+const withHoc = require('with-hoc').withHoc;
+const Foo = require('./foo').Foo;
 
-  return foo();
-};
+import React, { Component } from 'react';
+export const Bar = withHoc(Foo);

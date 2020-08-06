@@ -8,6 +8,8 @@ export const Baz = ({
   Bar = BarDI,
   val = valFunc(),
   eager = <Eager />,
+  deepEager = <Eager.Foo />,
+  deeperEager = <Eager.Foo.Bar />,
 }) => {
   foo();
   return <Bar val={val} />;

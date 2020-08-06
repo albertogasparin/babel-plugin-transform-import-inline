@@ -1,4 +1,5 @@
 import { NodePath, PluginObj, types as BabelTypes } from '@babel/core';
+import jestConfig from '../jest.config';
 
 interface ImportInfo {
   local: string;
@@ -34,13 +35,15 @@ export default function ({
     ]);
 
   const insertDeclaration = (path, info) => {
-    let parent = path.getFunctionParent();
-    if (!parent) parent = path.getStatementParent();
+    const parentWithBody = path.findParent(
+      (p) => p.node !== undefined && p.node.body !== undefined
+    );
 
-    if (!parent.scope.hasBinding(info.local)) {
-      parent
-        .get('body')
-        .unshiftContainer('body', createConstRequireExpression(info));
+    if (!parentWithBody.scope.hasBinding(info.local)) {
+      parentWithBody.unshiftContainer(
+        'body',
+        createConstRequireExpression(info)
+      );
     }
   };
 
@@ -110,6 +113,29 @@ export default function ({
         } else if (right.type === 'JSXElement') {
           if (right.openingElement.name.type === 'JSXIdentifier') {
             const { name } = right.openingElement.name;
+            const matchedImport = Object.keys(imports).find((key) => {
+              return imports[key].local === name;
+            });
+
+            const parentScope = path.getStatementParent().scope;
+            if (!parentScope.hasBinding(name)) {
+              // console.log(parentScope);
+              parentScope.push({
+                id: t.identifier(name),
+                init: createRequireExpression(imports[matchedImport]),
+              });
+            }
+          } else if (right.openingElement.name.type === 'JSXMemberExpression') {
+            let node = right.openingElement.name.object;
+
+            while (node && node.type !== 'JSXIdentifier') {
+              node = node.object;
+            }
+
+            if (!node) return;
+            if (node.type !== 'JSXIdentifier') return;
+
+            const { name } = node;
             const matchedImport = Object.keys(imports).find((key) => {
               return imports[key].local === name;
             });
