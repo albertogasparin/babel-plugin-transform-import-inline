@@ -65,7 +65,7 @@ export default function ({
 
     if (
       !affectedParents.get(info.local)?.has(parentWithBody) &&
-      !parentWithBody.scope.hasOwnBinding(info.local)
+      !parentWithBody.scope.hasBinding(info.local, true)
     ) {
       parentWithBody.unshiftContainer(
         // @ts-expect-error wrong typedef type
