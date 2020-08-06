@@ -8,9 +8,7 @@ interface ImportInfo {
   source: string;
 }
 
-type AffectedParents = {
-  [key: string]: WeakSet<NodePath>;
-};
+type AffectedParents = Map<string, WeakSet<NodePath>>;
 
 const IGNORED_MODULES = ['react'];
 
@@ -19,7 +17,7 @@ export default function ({
 }: {
   types: typeof BabelTypes;
 }): PluginObj {
-  const affectedParents: AffectedParents = {};
+  const affectedParents: AffectedParents = new Map();
 
   const createRequireExpression = (
     programPath: NodePath<BabelTypes.Program>,
@@ -61,13 +59,13 @@ export default function ({
       (p: NodePath<any>) => p.node?.body?.length && p.node?.type !== 'ClassBody'
     );
 
-    if (!affectedParents[info.local]) {
-      affectedParents[info.local] = new WeakSet();
+    if (!affectedParents.has(info.local)) {
+      affectedParents.set(info.local, new WeakSet());
     }
 
     if (
-      !affectedParents[info.local].has(parentWithBody) &&
-      !parentWithBody.scope.hasBinding(info.local)
+      !affectedParents.get(info.local)?.has(parentWithBody) &&
+      !parentWithBody.scope.hasOwnBinding(info.local)
     ) {
       parentWithBody.unshiftContainer(
         // @ts-expect-error wrong typedef type
@@ -75,7 +73,7 @@ export default function ({
         createConstRequireExpression(programPath, info)
       );
 
-      affectedParents[info.local].add(parentWithBody);
+      affectedParents.get(info.local)?.add(parentWithBody);
     }
   };
 
