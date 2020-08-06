@@ -27,21 +27,22 @@ export default function ({
   const createRequireExpression = (
     programPath: NodePath<BabelTypes.Program>,
     info: ImportInfo
-  ) =>
-    t.memberExpression(
+  ) => {
+    const requireExpression = t.callExpression(t.identifier('require'), [
+      t.stringLiteral(info.source),
+    ]);
+
+    if (info.property === null) {
+      return wrapInterop(programPath, requireExpression, 'namespace');
+    }
+
+    return t.memberExpression(
       info.property === 'default'
-        ? wrapInterop(
-            programPath,
-            t.callExpression(t.identifier('require'), [
-              t.stringLiteral(info.source),
-            ]),
-            'default'
-          )
-        : t.callExpression(t.identifier('require'), [
-            t.stringLiteral(info.source),
-          ]),
+        ? wrapInterop(programPath, requireExpression, 'default')
+        : requireExpression,
       t.identifier(info.property)
     );
+  };
 
   const createConstRequireExpression = (
     programPath: NodePath<BabelTypes.Program>,
