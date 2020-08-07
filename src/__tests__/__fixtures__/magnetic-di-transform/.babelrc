@@ -1,0 +1,3 @@
+{
+  "plugins": ["react-magnetic-di/babel-plugin"]
+}

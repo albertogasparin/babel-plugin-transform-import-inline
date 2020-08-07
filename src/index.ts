@@ -99,9 +99,17 @@ export default function ({
         const parentInsideBody = path.findParent(
           (p: NodePath<any>) => p.parentPath === parentWithBody
         );
-        parentInsideBody.insertBefore(
-          createConstRequireExpression(programPath, info)
-        );
+
+        if (!parentInsideBody || parentInsideBody.removed) {
+          parentWithBody.unshiftContainer(
+            'body',
+            createConstRequireExpression(programPath, info)
+          );
+        } else {
+          parentInsideBody.insertBefore(
+            createConstRequireExpression(programPath, info)
+          );
+        }
       }
 
       affectedParents.get(info.local)?.add(parentWithBody);
