@@ -53,6 +53,7 @@
     "eslint-plugin-local": "^1.0.0",
     "jest": "^26.0.1",
     "prettier": "^2.0.5",
+    "react-magnetic-di": "^2.2.4",
     "typescript": "^3.9.7"
   },
   "engines": {
