@@ -1,14 +1,14 @@
-const valFunc = _interopRequireDefault(require('./val-func')).default;
-
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
 
-const Eager = require('./eager').Eager;
+const fooDI = require('./foo').foo;
 
 const BarDI = require('./bar').Bar;
 
-const fooDI = require('./foo').foo;
+const Eager = require('./eager').Eager;
+
+const valFunc = _interopRequireDefault(require('./val-func')).default;
 
 export const Baz = ({
   foo = fooDI,

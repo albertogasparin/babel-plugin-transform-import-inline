@@ -1,11 +1,13 @@
 export const baz = () => {
-  const bazD = require('baz').baz;
-
-  const bar = require('bar').bar;
-
   const foo = require('foo').foo;
 
   const ff = foo;
+
+  const bar = require('bar').bar;
+
   const bb = bar;
+
+  const bazD = require('baz').baz;
+
   const baz = bazD;
 };
