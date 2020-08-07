@@ -8,7 +8,10 @@ interface ImportInfo {
   source: string;
 }
 
-type AffectedParents = Map<string, WeakSet<NodePath>>;
+type AffectedParents = Map<
+  string,
+  WeakSet<NodePath<BabelTypes.Function | BabelTypes.Program>>
+>;
 
 const IGNORED_MODULES = ['react'];
 
@@ -51,13 +54,38 @@ export default function ({
     ]);
 
   const insertDeclaration = (
-    path: NodePath<BabelTypes.Node>,
+    path: NodePath<Node>,
     programPath: NodePath<BabelTypes.Program>,
     info: ImportInfo
   ) => {
-    const parentWithBody = path.findParent(
-      (p: NodePath<any>) => p.node?.body?.length && p.node?.type !== 'ClassBody'
-    );
+    let parentWithBody = path.findParent(
+      (p: NodePath<any>) =>
+        (p.node?.body?.length && p.node?.type !== 'ClassBody') ||
+        (p.node?.type === 'ArrowFunctionExpression' &&
+          p.node?.body?.type !== 'BlockStatement')
+    ) as NodePath<BabelTypes.Function | BabelTypes.Program>;
+
+    const isSimpleArrowFunction =
+      parentWithBody.node?.type === 'ArrowFunctionExpression' &&
+      parentWithBody.node?.body?.type !== 'BlockStatement';
+
+    if (
+      parentWithBody.node?.type === 'ArrowFunctionExpression' &&
+      parentWithBody.node?.body?.type !== 'BlockStatement'
+    ) {
+      const expression = parentWithBody.node.body;
+      const newFunction = t.arrowFunctionExpression(
+        parentWithBody.node.params,
+        t.blockStatement([t.returnStatement(expression)])
+      );
+      parentWithBody.replaceWith(newFunction);
+      // parentWithBody = parentWithBody.find((p) => p.isBlockStatement());
+      // t.blockStatement([t.returnStatement(expression)]);
+      // parentWithBody.node.body = functionBlock;
+      // console.log(parentWithBody);
+      // parentWithBody = parentWithBody.find((p) => p.isBlockStatement());
+      // parentWithBody = functionBlock;
+    }
 
     if (!affectedParents.has(info.local)) {
       affectedParents.set(info.local, new WeakSet());
@@ -67,11 +95,17 @@ export default function ({
       !affectedParents.get(info.local)?.has(parentWithBody) &&
       !parentWithBody.scope.hasBinding(info.local, true)
     ) {
-      parentWithBody.unshiftContainer(
-        // @ts-expect-error wrong typedef type
-        'body',
-        createConstRequireExpression(programPath, info)
-      );
+      if (isSimpleArrowFunction) {
+        parentWithBody.scope.push({
+          id: t.identifier(info.local),
+          init: createRequireExpression(programPath, info),
+        });
+      } else {
+        parentWithBody.unshiftContainer(
+          'body',
+          createConstRequireExpression(programPath, info)
+        );
+      }
 
       affectedParents.get(info.local)?.add(parentWithBody);
     }
