@@ -76,7 +76,8 @@ export default function ({
       const expression = parentWithBody.node.body;
       const newFunction = t.arrowFunctionExpression(
         parentWithBody.node.params,
-        t.blockStatement([t.returnStatement(expression)])
+        t.blockStatement([t.returnStatement(expression)]),
+        parentWithBody.node.async
       );
       parentWithBody.replaceWith(newFunction);
     }
