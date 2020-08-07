@@ -9,9 +9,6 @@ pluginTester({
   fixtures: path.join(__dirname, '__fixtures__'),
   snapshot: true,
   babelOptions: {
-    plugins: [
-      '@babel/plugin-syntax-class-properties',
-      '@babel/plugin-syntax-flow',
-    ],
+    plugins: ['@babel/plugin-syntax-class-properties'],
   },
 });

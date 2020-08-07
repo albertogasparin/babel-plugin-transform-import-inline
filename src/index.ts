@@ -67,9 +67,10 @@ export default function ({
       !affectedParents.get(info.local)?.has(parentWithBody) &&
       !parentWithBody.scope.hasBinding(info.local, true)
     ) {
-      parentWithBody.unshiftContainer(
-        // @ts-expect-error wrong typedef type
-        'body',
+      const parentInsideBody = path.findParent(
+        (p: NodePath<any>) => p.parentPath === parentWithBody
+      );
+      parentInsideBody.insertBefore(
         createConstRequireExpression(programPath, info)
       );
 
