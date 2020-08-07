@@ -54,7 +54,7 @@ export default function ({
     ]);
 
   const insertDeclaration = (
-    path: NodePath<Node>,
+    path: NodePath<BabelTypes.Node>,
     programPath: NodePath<BabelTypes.Program>,
     info: ImportInfo
   ) => {
