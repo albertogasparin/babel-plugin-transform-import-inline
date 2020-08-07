@@ -1,5 +1,3 @@
-const foo = _interopRequireWildcard(require('./bar'));
-
 function _getRequireWildcardCache() {
   if (typeof WeakMap !== 'function') return null;
   var cache = new WeakMap();
@@ -41,5 +39,7 @@ function _interopRequireWildcard(obj) {
   }
   return newObj;
 }
+
+const foo = _interopRequireWildcard(require('./bar'));
 
 foo.bar();

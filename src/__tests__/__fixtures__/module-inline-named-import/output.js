@@ -1,6 +1,7 @@
-const withHoc = require('with-hoc').withHoc;
+import React, { Component } from 'react';
 
 const Foo = require('./foo').Foo;
 
-import React, { Component } from 'react';
+const withHoc = require('with-hoc').withHoc;
+
 export const Bar = withHoc(Foo);

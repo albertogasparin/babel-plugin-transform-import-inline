@@ -79,12 +79,6 @@ export default function ({
         t.blockStatement([t.returnStatement(expression)])
       );
       parentWithBody.replaceWith(newFunction);
-      // parentWithBody = parentWithBody.find((p) => p.isBlockStatement());
-      // t.blockStatement([t.returnStatement(expression)]);
-      // parentWithBody.node.body = functionBlock;
-      // console.log(parentWithBody);
-      // parentWithBody = parentWithBody.find((p) => p.isBlockStatement());
-      // parentWithBody = functionBlock;
     }
 
     if (!affectedParents.has(info.local)) {
@@ -101,8 +95,10 @@ export default function ({
           init: createRequireExpression(programPath, info),
         });
       } else {
-        parentWithBody.unshiftContainer(
-          'body',
+        const parentInsideBody = path.findParent(
+          (p: NodePath<any>) => p.parentPath === parentWithBody
+        );
+        parentInsideBody.insertBefore(
           createConstRequireExpression(programPath, info)
         );
       }
